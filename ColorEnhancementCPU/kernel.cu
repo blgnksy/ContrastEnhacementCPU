@@ -238,7 +238,7 @@ void MultiplyConstantDivideScaleFactor(Npp8u * pDst_Host, Npp8u  nConstant, int 
 		for (int j = 0; j < nWidth; j++)
 		{
 			//printf("Before multiply %d\n", pDst_Host[i*nWidth + j]);
-			pDst_Host[i*nWidth + j] = pDst_Host[i*nWidth + j] * nConstant/(nScaleFactor-1);
+			pDst_Host[i*nWidth + j] = pDst_Host[i*nWidth + j] * nConstant/pow(2,nScaleFactor-1);
 			//printf("After multiply %d\n", pDst_Host[i*nWidth + j]);
 		}
 	}
