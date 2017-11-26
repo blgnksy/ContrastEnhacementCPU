@@ -70,6 +70,7 @@ SubtractMin(Npp8u * pDst_Host, Npp8u  nMin, Npp8u * pSrc_Host, int & nWidth, int
 
 void 
 MultiplyConstantDivideScaleFactor(Npp8u * pDst_Host, Npp8u  nConstant, int nScaleFactor, int & nWidth, int & nHeight);
+void PrintMatrix(Npp8u * pImgMat);
 
 // Main function.
 int
@@ -91,6 +92,7 @@ main(int argc, char ** argv)
 	MinMax mm=MinMaxCalc(pSrc_Host, nWidth, nHeight);
 	assert(mm.min == 92 && mm.max == 202);
 	printf("Minimum %d and Maximum %d\n", mm.min, mm.max);
+
 	int nScaleFactor = 0;
 	int nPower = 1;
 	while (nPower * 255.0f / (mm.max - mm.min) < 255.0f)
@@ -101,9 +103,13 @@ main(int argc, char ** argv)
 
 	Npp8u nConstant = static_cast<Npp8u>(255.0f / (mm.max - mm.min) * (nPower / 2));
 	printf("Constant is %d. Scale Factor is %d.\n", nConstant,nScaleFactor);
-
+	//printf("Source Matrix\n");
+	//PrintMatrix(pSrc_Host);
+	//printf("Destination Matrix Before Subtraction\n");
+	//PrintMatrix(pDst_Host);
 	SubtractMin(pDst_Host, mm.min, pSrc_Host, nWidth, nHeight);
-
+	//printf("Destination Matrix After Subtraction\n");
+	//PrintMatrix(pDst_Host);
 	MultiplyConstantDivideScaleFactor(pDst_Host, nConstant, nScaleFactor,  nWidth, nHeight);
 
 	std::cout<<GetCounter()<<" ms."<<std::endl;
@@ -238,4 +244,15 @@ void MultiplyConstantDivideScaleFactor(Npp8u * pDst_Host, Npp8u  nConstant, int 
 	}
 	//printf("Constant Value Multiplied...\n");
 	//getchar();
+}
+
+void PrintMatrix(Npp8u * pImgMat) {
+	for (int i = 0; i < 20; i++)
+	{
+		for (int j = 0; j < 20; j++)
+		{
+			printf("%d\t", pImgMat[i*512 + j]);
+		}
+		printf("\n");
+	}
 }
