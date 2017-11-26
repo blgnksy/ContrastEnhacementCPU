@@ -49,6 +49,10 @@ double GetCounter()
 	return double(li.QuadPart - CounterStart) / PCFreq;
 }
 
+struct MinMax {
+	Npp8u min;
+	Npp8u max;
+};
 // Function declarations.
 Npp8u *
 LoadPGM(char * sFileName, int & nWidth, int & nHeight, int & nMaxGray);
@@ -56,11 +60,11 @@ LoadPGM(char * sFileName, int & nWidth, int & nHeight, int & nMaxGray);
 void
 WritePGM(char * sFileName, Npp8u * pDst_Host, int nWidth, int nHeight, int nMaxGray);
 
-void 
-MinMaxCalc(Npp8u *  nMin_Host, Npp8u * nMax_Host, Npp8u * pSrc_Host, int & nWidth, int & nHeight);
+MinMax 
+MinMaxCalc( Npp8u * pSrc_Host, int & nWidth, int & nHeight);
 
 void
-SubtractMin(Npp8u * pDst_Host, Npp8u  * nMin_Host, Npp8u * pSrc_Host, int & nWidth, int & nHeight);
+SubtractMin(Npp8u * pDst_Host, Npp8u  nMin, Npp8u * pSrc_Host, int & nWidth, int & nHeight);
 
 void 
 MultiplyConstantDivideScaleFactor(Npp8u * pDst_Host, Npp8u  nConstant, int nScaleFactor, int & nWidth, int & nHeight);
@@ -71,8 +75,6 @@ main(int argc, char ** argv)
 {
 	// Host parameter declarations.	
 	Npp8u * pSrc_Host, *pDst_Host;
-	Npp8u *  nMin_Host = new Npp8u[0];
-	Npp8u *nMax_Host = new Npp8u[0];
 	int   nWidth, nHeight, nMaxGray;
 
 	// Load image to the host.
@@ -84,20 +86,20 @@ main(int argc, char ** argv)
 	StartCounter();
 
 	/*CPU Min Max Calculator*/
-	MinMaxCalc(nMin_Host, nMax_Host, pSrc_Host, nWidth, nHeight);
-
+	MinMax mm=MinMaxCalc(pSrc_Host, nWidth, nHeight);
+	printf("%d\t%d\n", mm.min, mm.max);
 	int nScaleFactor = 0;
 	int nPower = 1;
-	while (nPower * 255.0f / (nMax_Host - nMax_Host) < 255.0f)
+	while (nPower * 255.0f / (mm.max - mm.min) < 255.0f)
 	{
 		nScaleFactor++;
 		nPower *= 2;
 	}
 
-	Npp8u nConstant = static_cast<Npp8u>(255.0f / (nMax_Host - nMin_Host) * (nPower / 2));
+	Npp8u nConstant = static_cast<Npp8u>(255.0f / (mm.max - mm.min) * (nPower / 2));
 	printf("Constant is %d.\n", nConstant);
 
-	SubtractMin(pDst_Host, nMin_Host, pSrc_Host, nWidth, nHeight);
+	SubtractMin(pDst_Host, mm.min, pSrc_Host, nWidth, nHeight);
 
 	MultiplyConstantDivideScaleFactor(pDst_Host, nConstant, nScaleFactor,  nWidth, nHeight);
 
@@ -106,7 +108,7 @@ main(int argc, char ** argv)
 
 	// Output the result image.
 	std::cout << "Output the PGM file." << std::endl;
-	WritePGM((char *)"C:\\Users\\blgnksy\\source\\repos\\CudaAssignment2\\ColorEnhancement\\lena_afterCPU3.pgm", pDst_Host, nWidth, nHeight, nMaxGray);
+	WritePGM((char *)"C:\\Users\\blgnksy\\source\\repos\\CudaAssignment2\\lena_afterCPU3.pgm", pDst_Host, nWidth, nHeight, nMaxGray);
 
 	// Clean up.
 	std::cout << "Clean up." << std::endl;
@@ -176,8 +178,8 @@ WritePGM(char * sFileName, Npp8u * pDst_Host, int nWidth, int nHeight, int nMaxG
 	fclose(fOutput);
 }
 
-void 
-MinMaxCalc(Npp8u  * nMin_Host, Npp8u * nMax_Host, Npp8u * pSrc_Host, int & nWidth, int & nHeight) {
+MinMax 
+MinMaxCalc( Npp8u * pSrc_Host, int & nWidth, int & nHeight) {
 	Npp8u min = 0;
 	Npp8u max = 0;
 	for (int i = 0; i < nHeight; i++)
@@ -198,19 +200,20 @@ MinMaxCalc(Npp8u  * nMin_Host, Npp8u * nMax_Host, Npp8u * pSrc_Host, int & nWidt
 			}
 		}
 	}
-	nMin_Host = &min;
-	nMax_Host = &max;
-	printf("Min Value= %d Max Value=%d for the given image.\n", *nMin_Host, *nMax_Host);
+
+	MinMax mm = { min,max };
+	printf("Min Value= %d Max Value=%d for the given image.\n", mm.min, mm.max);
 	//getchar();
+	return mm;
 }
 
-void SubtractMin(Npp8u * pDst_Host, Npp8u  * nMin_Host, Npp8u * pSrc_Host, int & nWidth, int & nHeight) {
+void SubtractMin(Npp8u * pDst_Host, Npp8u   nMin, Npp8u * pSrc_Host, int & nWidth, int & nHeight) {
 	for (int i = 0; i < nHeight; i++)
 	{
 		for (int j = 0; j < nWidth; j++)
 		{
 			//printf("Before subtract %d\n", pDst_Host[i*nWidth + j]);
-			pDst_Host[i*nWidth + j] = pSrc_Host[i*nWidth + j] - *nMin_Host;
+			pDst_Host[i*nWidth + j] = pSrc_Host[i*nWidth + j] - nMin;
 			//printf("After subtract %d\n", pDst_Host[i*nWidth + j]);
 		}
 	}
