@@ -27,6 +27,8 @@
 #include <sstream>
 #include "npp.h"
 #include <windows.h>
+#include <assert.h> 
+
 
 double PCFreq = 0.0;
 __int64 CounterStart = 0;
@@ -87,7 +89,8 @@ main(int argc, char ** argv)
 
 	/*CPU Min Max Calculator*/
 	MinMax mm=MinMaxCalc(pSrc_Host, nWidth, nHeight);
-	printf("%d\t%d\n", mm.min, mm.max);
+	assert(mm.min == 92 && mm.max == 202);
+	printf("Minimum %d and Maximum %d\n", mm.min, mm.max);
 	int nScaleFactor = 0;
 	int nPower = 1;
 	while (nPower * 255.0f / (mm.max - mm.min) < 255.0f)
@@ -97,7 +100,7 @@ main(int argc, char ** argv)
 	}
 
 	Npp8u nConstant = static_cast<Npp8u>(255.0f / (mm.max - mm.min) * (nPower / 2));
-	printf("Constant is %d.\n", nConstant);
+	printf("Constant is %d. Scale Factor is %d.\n", nConstant,nScaleFactor);
 
 	SubtractMin(pDst_Host, mm.min, pSrc_Host, nWidth, nHeight);
 
@@ -208,6 +211,7 @@ MinMaxCalc( Npp8u * pSrc_Host, int & nWidth, int & nHeight) {
 }
 
 void SubtractMin(Npp8u * pDst_Host, Npp8u   nMin, Npp8u * pSrc_Host, int & nWidth, int & nHeight) {
+	assert(nMin == 92);
 	for (int i = 0; i < nHeight; i++)
 	{
 		for (int j = 0; j < nWidth; j++)
@@ -222,6 +226,7 @@ void SubtractMin(Npp8u * pDst_Host, Npp8u   nMin, Npp8u * pSrc_Host, int & nWidt
 }
 
 void MultiplyConstantDivideScaleFactor(Npp8u * pDst_Host, Npp8u  nConstant, int nScaleFactor,  int & nWidth, int & nHeight) {
+	assert(nConstant == 148 && nScaleFactor==7);
 	for (int i = 0; i < nHeight; i++)
 	{
 		for (int j = 0; j < nWidth; j++)
